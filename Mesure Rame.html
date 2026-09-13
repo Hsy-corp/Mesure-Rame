@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Final Check — Largeurs au sol</title>
+<style>
+  :root{
+    --bg: #1b1e21;
+    --panel: #24282c;
+    --panel-2: #2c3136;
+    --border: #383e44;
+    --text: #f4f2ed;
+    --text-dim: #9aa0a6;
+    --amber: #e8901a;
+    --amber-dim: #6b4d1f;
+    --teal: #3e9c8f;
+    --red: #c85a4a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 88px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  header.top {
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  header.top h1 { font-size: 19px; font-weight: 700; margin: 0 0 2px; letter-spacing: 0.2px; }
+  header.top .sub { color: var(--text-dim); font-size: 13px; margin: 0; }
+
+  .summary-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text-dim);
+  }
+  .summary-bar .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px; font-size: 12px; color: var(--text);
+  }
+  .summary-bar .edit-link {
+    background: none; border: none; color: var(--amber); font-size: 13px; font-weight: 600; padding: 6px;
+  }
+
+  main { flex: 1; padding: 16px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 16px;
+    font-family: inherit;
+  }
+  input:focus { outline: none; border-color: var(--amber); }
+
+  .halle-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .halle-btn {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; color: var(--text); font-size: 17px; font-weight: 700;
+  }
+  .halle-btn .n { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+  .halle-btn.selected { border-color: var(--amber); background: #2c2419; }
+
+  .wagon-config-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .wagon-config-row input.numero {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 9px; font-size: 15px; text-align: left;
+  }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper button {
+    width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 18px; line-height: 1;
+  }
+  .stepper button:active { border-color: var(--amber); color: var(--amber); }
+  .stepper .val { min-width: 26px; text-align: center; font-family: "SF Mono", "Roboto Mono", Consolas, monospace; font-size: 16px; }
+  .stepper .lbl { font-size: 11px; color: var(--text-dim); margin-right: 2px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 18px; }
+  .btn { padding: 14px; border-radius: 8px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; }
+  .btn-primary { background: var(--amber); color: #1b1e21; flex: 1; }
+  .btn-primary:disabled { background: var(--amber-dim); color: #86766454; opacity: .6; }
+  .btn-ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); flex: 0 0 auto; padding: 14px 18px; }
+
+  .wagon-section {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 14px; overflow: hidden;
+  }
+  .wagon-section .wtitle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--panel-2);
+  }
+  .wagon-section .wtitle .wlabel { font-size: 13px; color: var(--text-dim); }
+  .wagon-section .wtitle input.numero {
+    background: transparent; border: none; color: var(--text); font-size: 16px; font-weight: 700;
+    width: 90px; padding: 4px 0;
+  }
+  .rows-head {
+    display: grid; grid-template-columns: 64px 1fr 1fr; gap: 8px;
+    padding: 8px 12px 2px; color: var(--text-dim); font-size: 11px;
+  }
+  .row {
+    display: grid; grid-template-columns: 64px 1fr 1fr; gap: 8px; align-items: center;
+    padding: 6px 12px;
+  }
+  .row .berce { font-size: 13px; color: var(--text-dim); font-family: "SF Mono", "Roboto Mono", Consolas, monospace; }
+  .row input {
+    padding: 10px 8px; text-align: center; font-variant-numeric: tabular-nums;
+    font-family: "SF Mono", "Roboto Mono", Consolas, monospace; font-size: 15px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 6px;
+  }
+  .wagon-section .wfoot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-top: 1px solid var(--border);
+  }
+
+  .add-btn {
+    width: 100%; background: var(--panel-2); border: 1px dashed var(--border); color: var(--text);
+    border-radius: 8px; padding: 13px; font-size: 15px; font-weight: 600; margin-top: 4px; cursor: pointer;
+  }
+  .add-btn:active { border-color: var(--amber); color: var(--amber); }
+
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 10px;
+    max-width: 480px; margin: 0 auto;
+  }
+  .btn-secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); flex: 0 0 auto; width: 52px; font-size: 20px; border-radius: 8px; }
+  .bottom-bar .btn-primary { flex: 1; }
+
+  .recap-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+  .recap-card .meta { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .recap-card .meta .rame { font-size: 17px; font-weight: 700; }
+  .recap-card .meta .date { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .recap-wagon { border-bottom: 1px solid var(--border); }
+  .recap-wagon:last-child { border-bottom: none; }
+  .recap-wagon .rw-title { padding: 10px 16px 4px; font-size: 14px; font-weight: 700; color: var(--amber); }
+  table.recap-table { width: 100%; border-collapse: collapse; }
+  table.recap-table th, table.recap-table td { padding: 8px 12px; font-size: 14px; text-align: center; }
+  table.recap-table th { color: var(--text-dim); font-weight: 600; font-size: 11px; }
+  table.recap-table td:first-child, table.recap-table th:first-child { text-align: left; font-family: "SF Mono", "Roboto Mono", Consolas, monospace; color: var(--text-dim); }
+  table.recap-table td.num { font-family: "SF Mono", "Roboto Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .recap-actions { display: flex; gap: 10px; margin-bottom: 10px; }
+  .toast {
+    position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+    background: var(--teal); color: #12201d; padding: 9px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 50;
+  }
+  .modal-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; max-width: 360px; width: 100%;
+  }
+  .modal-box p { margin: 0 0 18px; font-size: 15px; line-height: 1.4; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 700; border: none; }
+  .modal-cancel { background: var(--panel-2); color: var(--text); border: 1px solid var(--border) !important; }
+  .modal-confirm { background: var(--amber); color: #1b1e21; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <h1>Final check — largeurs au sol</h1>
+    <p class="sub">Berce ↔ bord du wagon, mesures des deux côtés</p>
+  </header>
+
+  <!-- Ecran 1: Halle -->
+  <div class="screen active" id="screen-halle">
+    <main>
+      <div class="field">
+        <label>Quelle halle ?</label>
+        <div class="halle-grid" id="halleGrid"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Ecran 2: Nombre de wagons + rame -->
+  <div class="screen" id="screen-wagons">
+    <div class="summary-bar">
+      <div class="chips"><span class="chip" id="halleChip"></span></div>
+    </div>
+    <main>
+      <div class="field">
+        <label for="nbWagons">Nombre de wagons réellement chargés</label>
+        <input type="number" id="nbWagons" inputmode="numeric" min="1" max="30">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="backToHalle">← Retour</button>
+        <button class="btn btn-primary" id="toBobinesConfig">Valider</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Ecran 3: Bobines par wagon -->
+  <div class="screen" id="screen-bobines">
+    <div class="summary-bar">
+      <div class="chips"><span class="chip" id="halleChip2"></span></div>
+    </div>
+    <main>
+      <div class="field">
+        <label>Nombre de bobines par wagon</label>
+        <div id="bobinesConfigList"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="backToWagons">← Retour</button>
+        <button class="btn btn-primary" id="toEntry">Commencer la saisie</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Ecran 4: Saisie -->
+  <div class="screen" id="screen-entry">
+    <div class="summary-bar">
+      <div class="chips">
+        <span class="chip" id="halleChip3"></span><span class="chip" id="dateChip3"></span>
+      </div>
+      <button class="edit-link" id="editConfig">Modifier config</button>
+    </div>
+    <main id="entryMain"></main>
+  </div>
+
+  <!-- Ecran 5: Recap -->
+  <div class="screen" id="screen-recap">
+    <main>
+      <div class="recap-card">
+        <div class="meta">
+          <div class="date" id="recapDate">Date</div>
+        </div>
+        <div id="recapBody"></div>
+      </div>
+      <div class="recap-actions">
+        <button class="btn btn-ghost" style="flex:1;" id="backToEntry">← Modifier</button>
+        <button class="btn btn-primary" style="flex:1;" id="exportPdf">Exporter en PDF</button>
+      </div>
+      <button class="add-btn" id="newCheck">Nouveau final check</button>
+    </main>
+  </div>
+
+  <div class="bottom-bar" id="entryBar" style="display:none;">
+    <button class="btn-secondary" id="clearAll" title="Réinitialiser">↺</button>
+    <button class="btn btn-primary" id="toRecap">Voir le récapitulatif</button>
+  </div>
+
+</div>
+<div class="toast" id="toast">Copié</div>
+<div class="modal-overlay" id="modalOverlay" style="display:none;">
+  <div class="modal-box">
+    <p id="modalMessage"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Annuler</button>
+      <button class="modal-confirm" id="modalConfirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const HALLES = {
+    '46': { label: 'Halle 46', defaultWagons: 10 },
+    '43': { label: 'Halle 43', defaultWagons: 7 },
+    '03': { label: 'Halle 03', defaultWagons: 14 }
+  };
+
+  let state = {
+    halle: null,
+    date: '',
+    wagons: [] // { id, numero, bobines: [{position, gauche, droite}] }
+  };
+
+  function todayStr(){
+    return new Date().toLocaleDateString('fr-FR', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+  }
+  const BERCE_MAP = {
+    1: [12],
+    2: [12, 52],
+    3: [12, 32, 52],
+    4: [12, 22, 42, 52],
+    5: [12, 22, 32, 42, 52]
+  };
+  function berceLabel(count, position){
+    const arr = BERCE_MAP[count] || BERCE_MAP[5];
+    return 'Berce ' + (arr[position - 1] ?? '');
+  }
+  function escapeHtml(v){ return String(v ?? '').replace(/"/g, '&quot;'); }
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('entryBar').style.display = (id === 'screen-entry') ? 'flex' : 'none';
+  }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  // Fenêtre de confirmation maison (le confirm() natif du navigateur
+  // ne s'affiche pas de façon fiable quand la page est ouverte en
+  // mode "web app" depuis l'écran d'accueil).
+  function showConfirm(message, onConfirm){
+    const overlay = document.getElementById('modalOverlay');
+    document.getElementById('modalMessage').textContent = message;
+    overlay.style.display = 'flex';
+    const cancelBtn = document.getElementById('modalCancel');
+    const confirmBtn = document.getElementById('modalConfirm');
+    function cleanup(){
+      overlay.style.display = 'none';
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onOk);
+    }
+    function onCancel(){ cleanup(); }
+    function onOk(){ cleanup(); onConfirm(); }
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onOk);
+  }
+
+  // ---------- Ecran 1: halle ----------
+  const halleGrid = document.getElementById('halleGrid');
+  Object.keys(HALLES).forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'halle-btn';
+    btn.innerHTML = `<span>${HALLES[key].label}</span><span class="n">${HALLES[key].defaultWagons} wagons (type)</span>`;
+    btn.addEventListener('click', () => {
+      state.halle = key;
+      document.getElementById('halleChip').textContent = HALLES[key].label;
+      document.getElementById('halleChip2').textContent = HALLES[key].label;
+      document.getElementById('halleChip3').textContent = HALLES[key].label;
+      document.getElementById('nbWagons').value = HALLES[key].defaultWagons;
+      showScreen('screen-wagons');
+      save();
+    });
+    halleGrid.appendChild(btn);
+  });
+
+  // ---------- Ecran 2: wagons ----------
+  document.getElementById('backToHalle').addEventListener('click', () => showScreen('screen-halle'));
+
+  document.getElementById('toBobinesConfig').addEventListener('click', () => {
+    const n = Math.max(1, Math.min(30, parseInt(document.getElementById('nbWagons').value, 10) || 1));
+    const existing = state.wagons;
+    const newWagons = [];
+    for (let i = 0; i < n; i++){
+      if (existing[i]) { newWagons.push(existing[i]); }
+      else { newWagons.push({ id: 'w' + (i+1) + '_' + Date.now(), numero: String(i+1), bobines: [ makeBobine(1) ] }); }
+    }
+    state.wagons = newWagons;
+    renderBobinesConfig();
+    showScreen('screen-bobines');
+    save();
+  });
+
+  function makeBobine(position){ return { position, gauche: '', droite: '' }; }
+
+  // ---------- Ecran 3: bobines par wagon ----------
+  function renderBobinesConfig(){
+    const list = document.getElementById('bobinesConfigList');
+    list.innerHTML = '';
+    state.wagons.forEach((w, idx) => {
+      const row = document.createElement('div');
+      row.className = 'wagon-config-row';
+      row.innerHTML = `
+        <input class="numero" type="text" value="${escapeHtml(w.numero)}" data-idx="${idx}" data-field="numero" placeholder="Wagon">
+        <div class="stepper">
+          <span class="lbl">bobines</span>
+          <button data-idx="${idx}" data-dir="-1">−</button>
+          <span class="val" id="bobcount-${idx}">${w.bobines.length}</span>
+          <button data-idx="${idx}" data-dir="1">+</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('bobinesConfigList').addEventListener('input', (e) => {
+    if (e.target.classList.contains('numero')){
+      const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+      state.wagons[idx].numero = e.target.value;
+      save();
+    }
+  });
+
+  document.getElementById('bobinesConfigList').addEventListener('click', (e) => {
+    const dir = e.target.getAttribute('data-dir');
+    if (!dir) return;
+    const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+    const w = state.wagons[idx];
+    const delta = parseInt(dir, 10);
+    const newCount = Math.max(1, Math.min(5, w.bobines.length + delta));
+    if (newCount > w.bobines.length){
+      for (let p = w.bobines.length + 1; p <= newCount; p++) w.bobines.push(makeBobine(p));
+    } else if (newCount < w.bobines.length){
+      w.bobines = w.bobines.slice(0, newCount);
+    }
+    document.getElementById('bobcount-' + idx).textContent = w.bobines.length;
+    save();
+  });
+
+  document.getElementById('backToWagons').addEventListener('click', () => showScreen('screen-wagons'));
+
+  document.getElementById('toEntry').addEventListener('click', () => {
+    document.getElementById('dateChip3').textContent = state.date;
+    renderEntry();
+    showScreen('screen-entry');
+    save();
+  });
+
+  // ---------- Ecran 4: saisie ----------
+  function renderEntry(){
+    const main = document.getElementById('entryMain');
+    main.innerHTML = '';
+    state.wagons.forEach((w, wIdx) => {
+      const section = document.createElement('div');
+      section.className = 'wagon-section';
+      let rowsHtml = '';
+      w.bobines.forEach((b) => {
+        rowsHtml += `
+          <div class="row">
+            <span class="berce">${berceLabel(w.bobines.length, b.position)}</span>
+            <input type="number" inputmode="decimal" step="0.1" placeholder="Gauche cm" value="${escapeHtml(b.gauche)}" data-widx="${wIdx}" data-pos="${b.position}" data-field="gauche">
+            <input type="number" inputmode="decimal" step="0.1" placeholder="Droite cm" value="${escapeHtml(b.droite)}" data-widx="${wIdx}" data-pos="${b.position}" data-field="droite">
+          </div>`;
+      });
+      section.innerHTML = `
+        <div class="wtitle">
+          <span class="wlabel">Wagon</span>
+          <input class="numero" type="text" value="${escapeHtml(w.numero)}" data-widx="${wIdx}" data-field="numero">
+          <span></span>
+        </div>
+        <div class="rows-head"><span>Berce</span><span>Gauche</span><span>Droite</span></div>
+        ${rowsHtml}
+        <div class="wfoot">
+          <span class="lbl" style="font-size:12px;color:var(--text-dim);">${w.bobines.length}/5 bobines</span>
+          <div class="stepper">
+            <button data-widx="${wIdx}" data-dir="-1">−</button>
+            <span class="val">bobine</span>
+            <button data-widx="${wIdx}" data-dir="1">+</button>
+          </div>
+        </div>
+      `;
+      main.appendChild(section);
+    });
+    const addWagonBtn = document.createElement('button');
+    addWagonBtn.className = 'add-btn';
+    addWagonBtn.id = 'addWagonBtn';
+    addWagonBtn.textContent = '+ Ajouter un wagon';
+    main.appendChild(addWagonBtn);
+    addWagonBtn.addEventListener('click', () => {
+      const n = state.wagons.length;
+      state.wagons.push({ id: 'w' + (n+1) + '_' + Date.now(), numero: String(n+1), bobines: [ makeBobine(1) ] });
+      renderEntry();
+      save();
+    });
+  }
+
+  document.getElementById('entryMain').addEventListener('input', (e) => {
+    const widx = e.target.getAttribute('data-widx');
+    const field = e.target.getAttribute('data-field');
+    if (widx === null || !field) return;
+    const w = state.wagons[parseInt(widx, 10)];
+    if (!w) return;
+    if (field === 'numero'){ w.numero = e.target.value; save(); return; }
+    const pos = parseInt(e.target.getAttribute('data-pos'), 10);
+    const b = w.bobines.find(bb => bb.position === pos);
+    if (b){ b[field] = e.target.value; save(); }
+  });
+
+  document.getElementById('entryMain').addEventListener('click', (e) => {
+    const dir = e.target.getAttribute('data-dir');
+    if (!dir) return;
+    const widx = parseInt(e.target.getAttribute('data-widx'), 10);
+    const w = state.wagons[widx];
+    const delta = parseInt(dir, 10);
+    const newCount = Math.max(1, Math.min(5, w.bobines.length + delta));
+    if (newCount > w.bobines.length){
+      for (let p = w.bobines.length + 1; p <= newCount; p++) w.bobines.push(makeBobine(p));
+    } else if (newCount < w.bobines.length){
+      w.bobines = w.bobines.slice(0, newCount);
+    }
+    renderEntry();
+    save();
+  });
+
+  document.getElementById('editConfig').addEventListener('click', () => {
+    showConfirm('Revenir à la configuration ? Les valeurs déjà saisies sont conservées si tu ne réduis pas le nombre de wagons/bobines.', () => {
+      renderBobinesConfig();
+      showScreen('screen-bobines');
+    });
+  });
+
+  document.getElementById('clearAll').addEventListener('click', () => {
+    showConfirm('Réinitialiser toutes les valeurs saisies (garde la config wagons/bobines) ?', () => {
+      state.wagons.forEach(w => w.bobines.forEach(b => { b.gauche = ''; b.droite = ''; }));
+      renderEntry();
+      save();
+    });
+  });
+
+  // ---------- Ecran 5: recap ----------
+  document.getElementById('toRecap').addEventListener('click', () => {
+    buildRecap();
+    showScreen('screen-recap');
+  });
+  document.getElementById('backToEntry').addEventListener('click', () => showScreen('screen-entry'));
+
+  document.getElementById('newCheck').addEventListener('click', () => {
+    showConfirm('Démarrer un nouveau final check ? Tout sera effacé.', () => {
+      state = { halle: null, date: todayStr(), wagons: [] };
+      document.getElementById('nbWagons').value = '';
+      showScreen('screen-halle');
+      save();
+    });
+  });
+
+  function buildRecap(){
+    document.getElementById('recapDate').textContent = `${HALLES[state.halle] ? HALLES[state.halle].label : ''} · ${state.date}`;
+    const body = document.getElementById('recapBody');
+    body.innerHTML = '';
+    state.wagons.forEach(w => {
+      const div = document.createElement('div');
+      div.className = 'recap-wagon';
+      let rows = w.bobines.map(b => `
+        <tr>
+          <td>${berceLabel(w.bobines.length, b.position)}</td>
+          <td class="num">${escapeHtml(b.gauche) || '—'}</td>
+          <td class="num">${escapeHtml(b.droite) || '—'}</td>
+        </tr>`).join('');
+      div.innerHTML = `
+        <div class="rw-title">Wagon ${escapeHtml(w.numero) || '—'}</div>
+        <table class="recap-table">
+          <thead><tr><th>Berce</th><th>Gauche (cm)</th><th>Droite (cm)</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      body.appendChild(div);
+    });
+  }
+
+  // ---------- Export PDF (généré localement, sans dépendance ni réseau) ----------
+  function sanitizePdfText(s){
+    return String(s)
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[^\x00-\xFF]/g, '?');
+  }
+  function escapePdfText(s){
+    return sanitizePdfText(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  }
+  function strToLatin1Bytes(str){
+    const bytes = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i) & 0xFF;
+    return bytes;
+  }
+
+  function buildPdfBytes(pagesLines){
+    const pageWidth = 595, pageHeight = 842;
+    const marginLeft = 40, marginTop = 800;
+    let objNum = 1;
+    const catalogNum = objNum++;
+    const pagesNum = objNum++;
+    const fontRegularNum = objNum++;
+    const fontBoldNum = objNum++;
+    const pageNums = [], contentNums = [], contentStreams = [];
+
+    pagesLines.forEach((lines) => {
+      const pageNum = objNum++;
+      const contentNum = objNum++;
+      pageNums.push(pageNum);
+      contentNums.push(contentNum);
+      let content = '';
+      let y = marginTop;
+      lines.forEach((line) => {
+        const size = line.size || 10;
+        const leading = size + 4;
+        const font = line.font || 'F1';
+        y -= leading;
+        if (line.text !== ''){
+          content += `BT\n/${font} ${size} Tf\n${marginLeft} ${y} Td\n(${escapePdfText(line.text)}) Tj\nET\n`;
+        }
+      });
+      contentStreams.push(content);
+    });
+
+    const objects = [];
+    objects.push({ num: catalogNum, body: `<< /Type /Catalog /Pages ${pagesNum} 0 R >>` });
+    const kids = pageNums.map(n => `${n} 0 R`).join(' ');
+    objects.push({ num: pagesNum, body: `<< /Type /Pages /Kids [${kids}] /Count ${pageNums.length} >>` });
+    objects.push({ num: fontRegularNum, body: `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>` });
+    objects.push({ num: fontBoldNum, body: `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>` });
+
+    pageNums.forEach((pageNum, idx) => {
+      const contentNum = contentNums[idx];
+      objects.push({ num: pageNum, body: `<< /Type /Page /Parent ${pagesNum} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontRegularNum} 0 R /F2 ${fontBoldNum} 0 R >> >> /Contents ${contentNum} 0 R >>` });
+    });
+    contentNums.forEach((contentNum, idx) => {
+      objects.push({ num: contentNum, body: null, stream: contentStreams[idx] });
+    });
+
+    objects.sort((a,b) => a.num - b.num);
+
+    let out = '%PDF-1.4\n';
+    let body = '';
+    const offsets = {};
+    objects.forEach(obj => {
+      offsets[obj.num] = (out + body).length;
+      if (obj.stream !== undefined && obj.stream !== null){
+        const streamLen = obj.stream.length;
+        body += `${obj.num} 0 obj\n<< /Length ${streamLen} >>\nstream\n${obj.stream}endstream\nendobj\n`;
+      } else {
+        body += `${obj.num} 0 obj\n${obj.body}\nendobj\n`;
+      }
+    });
+
+    const xrefStart = (out + body).length;
+    const maxNum = objects[objects.length - 1].num;
+    let xref = `xref\n0 ${maxNum + 1}\n0000000000 65535 f \n`;
+    for (let n = 1; n <= maxNum; n++){
+      const off = offsets[n];
+      xref += off === undefined ? `0000000000 00000 f \n` : `${String(off).padStart(10,'0')} 00000 n \n`;
+    }
+    const trailer = `trailer\n<< /Size ${maxNum + 1} /Root ${catalogNum} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+    return strToLatin1Bytes(out + body + xref + trailer);
+  }
+
+  function paginatePdfLines(lines){
+    const marginTop = 800, bottomLimit = 40;
+    const usable = marginTop - bottomLimit;
+    const pages = [];
+    let current = [];
+    let used = 0;
+    lines.forEach(line => {
+      const leading = (line.size || 10) + 4;
+      if (used + leading > usable && current.length > 0){
+        pages.push(current);
+        current = [];
+        used = 0;
+      }
+      current.push(line);
+      used += leading;
+    });
+    if (current.length > 0) pages.push(current);
+    if (pages.length === 0) pages.push([]);
+    return pages;
+  }
+
+  function buildRecapPdfLines(){
+    const lines = [];
+    lines.push({ text: 'Final check - largeurs au sol', size: 14, font: 'F2' });
+    lines.push({ text: `${HALLES[state.halle] ? HALLES[state.halle].label : ''} - ${state.date}`, size: 10 });
+    lines.push({ text: '', size: 8 });
+    state.wagons.forEach(w => {
+      lines.push({ text: `Wagon ${w.numero || '-'}`, size: 12, font: 'F2' });
+      w.bobines.forEach(b => {
+        const berce = berceLabel(w.bobines.length, b.position);
+        lines.push({ text: `${berce}    Gauche: ${b.gauche || '-'} cm    Droite: ${b.droite || '-'} cm`, size: 10 });
+      });
+      lines.push({ text: '', size: 8 });
+    });
+    return lines;
+  }
+
+  document.getElementById('exportPdf').addEventListener('click', () => {
+    try {
+      const pages = paginatePdfLines(buildRecapPdfLines());
+      const pdfBytes = buildPdfBytes(pages);
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const dateSlug = (state.date || '').replace(/[^\w-]+/g, '');
+      const fileName = `final-check-halle${state.halle || ''}-${dateSlug}.pdf`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      showToast('PDF généré');
+    } catch (err) {
+      showToast('Export PDF impossible ici');
+    }
+  });
+
+  // ---------- Persistance ----------
+  // Stockage local du navigateur : fonctionne une fois le fichier ouvert
+  // directement (hors aperçu Claude), donc adapté à un usage sur le quai.
+  const STORAGE_KEY = 'finalCheckRame_v1';
+
+  function save(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) { /* stockage indisponible */ }
+  }
+
+  function load(){
+    state.date = todayStr();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && saved.halle) {
+          state = saved;
+          state.date = todayStr();
+          document.getElementById('nbWagons').value = state.wagons.length || HALLES[state.halle].defaultWagons;
+          document.getElementById('halleChip').textContent = HALLES[state.halle].label;
+          document.getElementById('halleChip2').textContent = HALLES[state.halle].label;
+          document.getElementById('halleChip3').textContent = HALLES[state.halle].label;
+          document.getElementById('dateChip3').textContent = state.date;
+          renderEntry();
+          showScreen('screen-entry');
+          return;
+        }
+      }
+    } catch (err) { /* pas de sauvegarde exploitable */ }
+    showScreen('screen-halle');
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

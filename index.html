@@ -231,7 +231,23 @@
       </div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="backToWagons">← Retour</button>
-        <button class="btn btn-primary" id="toEntry">Commencer la saisie</button>
+        <button class="btn btn-primary" id="toDirection">Valider</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Ecran 3bis: Sens de saisie -->
+  <div class="screen" id="screen-direction">
+    <div class="summary-bar">
+      <div class="chips"><span class="chip" id="halleChip2b"></span></div>
+    </div>
+    <main>
+      <div class="field">
+        <label>Par quel wagon commencez-vous ?</label>
+        <div class="halle-grid" id="directionGrid"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="backToBobinesFromDirection">← Retour</button>
       </div>
     </main>
   </div>
@@ -292,6 +308,7 @@
   let state = {
     halle: null,
     date: '',
+    direction: 'first', // 'first' = wagon 1 en premier, 'last' = dernier wagon en premier
     wagons: [] // { id, numero, bobines: [{position, gauche, droite}] }
   };
 
@@ -424,18 +441,49 @@
 
   document.getElementById('backToWagons').addEventListener('click', () => showScreen('screen-wagons'));
 
-  document.getElementById('toEntry').addEventListener('click', () => {
-    document.getElementById('dateChip3').textContent = state.date;
-    renderEntry();
-    showScreen('screen-entry');
+  document.getElementById('toDirection').addEventListener('click', () => {
+    document.getElementById('halleChip2b').textContent = HALLES[state.halle] ? HALLES[state.halle].label : '';
+    renderDirectionGrid();
+    showScreen('screen-direction');
     save();
   });
+
+  document.getElementById('backToBobinesFromDirection').addEventListener('click', () => showScreen('screen-bobines'));
+
+  // ---------- Ecran 3bis: sens de saisie ----------
+  function getOrderedIndexes(){
+    const idxs = state.wagons.map((_, i) => i);
+    return state.direction === 'last' ? idxs.reverse() : idxs;
+  }
+
+  function renderDirectionGrid(){
+    const grid = document.getElementById('directionGrid');
+    grid.innerHTML = '';
+    const options = [
+      { key: 'first', label: 'Wagon 1', sub: 'Commencer par le premier wagon' },
+      { key: 'last', label: 'Dernier wagon', sub: 'Commencer par le dernier wagon' }
+    ];
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'halle-btn' + (state.direction === opt.key ? ' selected' : '');
+      btn.innerHTML = `<span>${opt.label}</span><span class="n">${opt.sub}</span>`;
+      btn.addEventListener('click', () => {
+        state.direction = opt.key;
+        document.getElementById('dateChip3').textContent = state.date;
+        renderEntry();
+        showScreen('screen-entry');
+        save();
+      });
+      grid.appendChild(btn);
+    });
+  }
 
   // ---------- Ecran 4: saisie ----------
   function renderEntry(){
     const main = document.getElementById('entryMain');
     main.innerHTML = '';
-    state.wagons.forEach((w, wIdx) => {
+    getOrderedIndexes().forEach((wIdx) => {
+      const w = state.wagons[wIdx];
       const section = document.createElement('div');
       section.className = 'wagon-section';
       let rowsHtml = '';
@@ -531,7 +579,7 @@
 
   document.getElementById('newCheck').addEventListener('click', () => {
     showConfirm('Démarrer un nouveau final check ? Tout sera effacé.', () => {
-      state = { halle: null, date: todayStr(), wagons: [] };
+      state = { halle: null, date: todayStr(), direction: 'first', wagons: [] };
       document.getElementById('nbWagons').value = '';
       showScreen('screen-halle');
       save();

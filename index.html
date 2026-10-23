@@ -487,7 +487,8 @@
       const section = document.createElement('div');
       section.className = 'wagon-section';
       let rowsHtml = '';
-      w.bobines.forEach((b) => {
+      const ordered = state.direction === 'last' ? [...w.bobines].reverse() : w.bobines;
+      ordered.forEach((b) => {
         rowsHtml += `
           <div class="row">
             <span class="berce">${berceLabel(w.bobines.length, b.position)}</span>
